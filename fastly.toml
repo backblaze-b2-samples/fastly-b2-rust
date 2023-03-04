@@ -1,42 +1,51 @@
 # Fastly / Backblaze B2 Demo
 
-authors = ["ppatterson@backblaze.com"]
-description = "Demo of Fastly Compute@Edge with Backblaze B2"
+authors = ["pat@backblaze.com"]
+description = " to Provide access to one or more Backblaze B2 Buckets via Fastly Compute@Edge"
 language = "rust"
 manifest_version = 2
-name = "fastly-compute-b2-demo"
+name = "fastly-b2-rust"
 service_id = ""
 
-# Edit the backends below to match your B2 buckets and endpoints
+# Edit the backends below to match your B2 bucket and its endpoint
 
-# Local server config wants URLs
+# Local server backend config wants URL
 [local_server]
   [local_server.backends]
-    [local_server.backends.eu_origin]
-      url = "https://YOUR-EU-BUCKET.YOUR-EU-ENDPOINT"
-    [local_server.backends.us_origin]
-      url = "https://YOUR-US-BUCKET.YOUR-US-ENDPOINT"
+    [local_server.backends.b2_origin]
+      url = "https://s3.us-west-004.backblazeb2.com"
+
+  [local_server.dictionaries]
+    [local_server.dictionaries.config]
+      format = "inline-toml"
+      [local_server.dictionaries.config.contents]
+        "allow_list_bucket" = "true"
+        "bucket_name" = "$path"
+        "endpoint" = "s3.us-west-004.backblazeb2.com"
+    [local_server.dictionaries.bucket_auth]
+      file = "bucket_auth.json"
+      format = "json"
 
 # Deploy on Fastly wants domains and ports
 [setup]
   [setup.backends]
-    [setup.backends.eu_origin]
-      description = "B2 Domain for EU origin"
-      address = "YOUR-EU-BUCKET.YOUR-EU-ENDPOINT"
-      port = 443
-    [setup.backends.us_origin]
-      description = "B2 Domain for US origin"
-      address = "YOUR-US-BUCKET.YOUR-US-ENDPOINT"
+    [setup.backends.b2_origin]
+      description = "B2 Origin"
+      address = "YOUR-B2-ENDPOINT"
       port = 443
 
   [setup.dictionaries]
+    [setup.dictionaries.config]
+      [setup.dictionaries.config.items]
+        [setup.dictionaries.config.items.allow_list_bucket]
+          description = "Set to true to allow clients to list bucket contents"
+        [setup.dictionaries.config.items.bucket_name]
+          description = "Your Backblaze B2 Bucket's name"
+        [setup.dictionaries.config.items.endpoint]
+          description = "Your Backblaze B2 Bucket's endpoint"
     [setup.dictionaries.bucket_auth]
       [setup.dictionaries.bucket_auth.items]
-        [setup.dictionaries.bucket_auth.items.eu_origin_access_key_id]
-          description = "B2 Application Key ID for EU Origin"
-        [setup.dictionaries.bucket_auth.items.eu_origin_secret_access_key]
-          description = "B2 Application Key for EU Origin"
-        [setup.dictionaries.bucket_auth.items.us_origin_access_key_id]
-          description = "B2 Application Key ID for US Origin"
-        [setup.dictionaries.bucket_auth.items.us_origin_secret_access_key]
-          description = "B2 Application Key for US Origin"
+        [setup.dictionaries.bucket_auth.items.b2_origin_access_key_id]
+          description = "Your B2 Application Key ID"
+        [setup.dictionaries.bucket_auth.items.b2_origin_secret_access_key]
+          description = "Your B2 Application Key"

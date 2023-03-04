@@ -14,8 +14,7 @@ pub fn hash(input: String) -> String {
 pub struct SignatureClient {
     pub access_key_id: String,
     pub secret_access_token: String,
-    pub bucket_name: String,
-    pub bucket_host: String,
+    pub host: String,
     pub bucket_region: String,
     pub query_string: String,
 }
@@ -38,7 +37,7 @@ impl SignatureClient {
         // These must be sorted alphabetically
         let canonical_headers = format!(
             "host:{}\nx-amz-content-sha256:{}\nx-amz-date:{}\n",
-            format!("{}.{}", self.bucket_name, self.bucket_host),
+            self.host,
             amz_content_256,
             x_amz_date
         );

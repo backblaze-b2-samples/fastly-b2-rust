@@ -2,5 +2,5 @@
 **/*.rs.bk
 /bin
 /pkg
-/src/config_private.rs
 .idea
+bucket_auth.json
