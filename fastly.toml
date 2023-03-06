@@ -47,6 +47,7 @@ service_id = ""
           input_type = "string"
         [setup.dictionaries.config.items.allowed_buckets]
           description = "A comma-separated list of buckets to which the client is allowed access"
+          value = ""
           input_type = "string"
         [setup.dictionaries.config.items.endpoint]
           description = "Your Backblaze B2 Bucket's endpoint (the same value as B2 Origin, above)"
