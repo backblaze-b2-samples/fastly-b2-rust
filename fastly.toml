@@ -31,8 +31,7 @@ service_id = ""
 [setup]
   [setup.backends]
     [setup.backends.b2_origin]
-      description = "B2 Origin"
-      address = "YOUR-B2-ENDPOINT"
+      description = "B2 Endpoint, for example, s3.us-west-001.backblazeb2.com"
       port = 443
 
   [setup.dictionaries]
@@ -53,9 +52,9 @@ service_id = ""
           input_type = "string"
     [setup.dictionaries.bucket_auth]
       [setup.dictionaries.bucket_auth.items]
-        [setup.dictionaries.bucket_auth.items.b2_origin_access_key_id]
+        [setup.dictionaries.bucket_auth.items.b2_application_key_id]
           description = "Your B2 Application Key ID"
           input_type = "string"
-        [setup.dictionaries.bucket_auth.items.b2_origin_secret_access_key]
+        [setup.dictionaries.bucket_auth.items.b2_application_key]
           description = "Your B2 Application Key"
           input_type = "password"
