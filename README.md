@@ -14,9 +14,9 @@ The app can be configured to either serve data from a single named bucket or par
 * `$path` - use the initial segment in the incoming URL path as the bucket name. For example, `https://images.example.com/my-bucket/path/to/object.png`.
 * `$host` - use the initial subdomain of the hostname as the bucket name. For example, `https://my-bucket.images.example.com/path/to/object.png`.
 
-Note that, for the app to serve data from multiple buckets, the application key must be configured to access _all_ buckets in the Backblaze account. You must configure `allowed_buckets` with a comma-separated list of buckets which clients may access, for example, `my-image-bucket,my-video-bucket,my-static-bucket`.
+Note that, for the app to serve data from multiple buckets, the application key must be configured to access _all_ buckets in the Backblaze account.
 
-If `bucket-name` contains the name of a bucket, then access is allowed to that bucket alone; you need not set `allowed_buckets`. 
+You must configure `allowed_buckets` with a comma-separated list of buckets which clients may access, for example, `my-image-bucket,my-video-bucket,my-static-bucket`. If `bucket-name` contains the name of a bucket, then `allowed_buckets` must contain that same value for access to be allowed. 
 
 Backblaze B2 does not allow clients to list the contents of buckets with `public_read` visibility. By default, the app follows this behaviour, but you can override this to allow clients to list buckets contents via `allow_list_bucket`.
 
@@ -38,7 +38,7 @@ You can run the app using the local test server (`fastly compute serve`), in whi
       [local_server.dictionaries.config.contents]
         "allow_list_bucket" = "<true, if you want to allow clients to list objects, otherwise false>"
         "bucket_name" = "<a bucket name, $host or $path (see above)>"
-        "allowed_buckets" = "<a comma-separated list of buckets to which the client is allowed access when using $host or $path mode>"
+        "allowed_buckets" = "<a comma-separated list of buckets to which the client is allowed access>"
         "endpoint" = "<your B2 Bucket's S3 endpoint>"
     [local_server.dictionaries.bucket_auth]
       # Credentials are stored separately
@@ -68,7 +68,7 @@ A second Edge Dictionary, named `config`, must contain the following values:
 
 * `endpoint` - Your B2 Bucket's S3 endpoint - e.g. `s3.us-west-001.backblazeb2.com`.
 * `bucket_name` - A bucket name, `$host` or `$path` (see above)
-* `allowed_buckets` - A comma-separated list of buckets to which the client is allowed access when using `$host` or `$path` mode.
+* `allowed_buckets` - A comma-separated list of buckets to which the client is allowed access.
 * `allow_list_bucket` - `true`, if you want to allow clients to list objects, otherwise `false`.
 
 If you use the 'Deploy to Fastly' button you will be prompted for these values and the Edge Dictionaries will be created as part of the deployment process. Read the configuration prompts carefully as, at present, they are not shown in a consistent order.

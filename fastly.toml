@@ -20,7 +20,7 @@ service_id = ""
       [local_server.dictionaries.config.contents]
         "allow_list_bucket" = "<true, if you want to allow clients to list objects, otherwise false>"
         "bucket_name" = "<a bucket name, $host or $path (see above)>"
-        "allowed_buckets" = "<a comma-separated list of buckets to which the client is allowed access when using $host or $path as bucket_name>"
+        "allowed_buckets" = "<a comma-separated list of buckets to which the client is allowed access>"
         "endpoint" = "<your B2 Bucket's S3 endpoint>"
     [local_server.dictionaries.bucket_auth]
       # Credentials are stored separately
@@ -40,15 +40,22 @@ service_id = ""
       [setup.dictionaries.config.items]
         [setup.dictionaries.config.items.allow_list_bucket]
           description = "Set to true to allow clients to list bucket contents"
+          value = "false"
+          input_type = "string"
         [setup.dictionaries.config.items.bucket_name]
           description = "Your Backblaze B2 Bucket's name; $host to use the initial subdomain of the incoming hostname; $path to use the initial segment of the incoming path"
+          input_type = "string"
         [setup.dictionaries.config.items.allowed_buckets]
-          description = "A comma-separated list of buckets to which the client is allowed access when using $host or $path as the bucket name"
+          description = "A comma-separated list of buckets to which the client is allowed access"
+          input_type = "string"
         [setup.dictionaries.config.items.endpoint]
-          description = "Your Backblaze B2 Bucket's endpoint"
+          description = "Your Backblaze B2 Bucket's endpoint (the same value as B2 Origin, above)"
+          input_type = "string"
     [setup.dictionaries.bucket_auth]
       [setup.dictionaries.bucket_auth.items]
         [setup.dictionaries.bucket_auth.items.b2_origin_access_key_id]
           description = "Your B2 Application Key ID"
+          input_type = "string"
         [setup.dictionaries.bucket_auth.items.b2_origin_secret_access_key]
           description = "Your B2 Application Key"
+          input_type = "password"

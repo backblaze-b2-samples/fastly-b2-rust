@@ -81,32 +81,29 @@ fn main(mut req: Request) -> Result<Response, Error> {
         }
     }
 
-    // Check access is allowed and normalize outgoing request path to /bucket-name/rest/of/path
-    let (bucket_allowed, be_path) = match config_bucket_name.as_str() {
-        // Bucket name is the first segment of the incoming path
-        "$path" => {
-            let bucket_name = path_segments[0];
-            (
-                allowed_buckets.contains(&bucket_name),
-                format!("/{}", path)
-            )
-        },
+    // Calculate bucket name and normalize outgoing request path to /bucket-name/rest/of/path
+    let (bucket_name, be_path) = match config_bucket_name.as_str() {
+        // Bucket name is already the first segment of the incoming path
+        "$path" => (
+            path_segments[0],
+            format!("/{}", path)
+        ),
         // Bucket name is incoming host prefix
         "$host" => {
             let bucket_name = req.get_url().host_str().unwrap().split('.').collect::<Vec<&str>>()[0];
             (
-                allowed_buckets.contains(&bucket_name),
+                bucket_name,
                 format!("/{}/{}", bucket_name, path)
             )
         },
         // Bucket name is set in configuration
         _ => (
-            true,
+            config_bucket_name,
             format!("/{}/{}", config_bucket_name, path)
         ),
     };
 
-    if !bucket_allowed {
+    if !allowed_buckets.contains(&bucket_name) {
         return Ok(Response::from_status(StatusCode::NOT_FOUND));
     }
 
