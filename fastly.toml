@@ -8,25 +8,26 @@ name = "fastly-b2-rust"
 service_id = ""
 
 # Edit the backends below to match your B2 bucket and its endpoint
-
-# Local server backend config wants URL
 [local_server]
   [local_server.backends]
     [local_server.backends.b2_origin]
-      url = "https://s3.us-west-004.backblazeb2.com"
+      # URL for B2 bucket endpoint
+      url = "https://<your B2 Bucket's S3 endpoint>"
 
   [local_server.dictionaries]
     [local_server.dictionaries.config]
       format = "inline-toml"
       [local_server.dictionaries.config.contents]
-        "allow_list_bucket" = "true"
-        "bucket_name" = "$path"
-        "endpoint" = "s3.us-west-004.backblazeb2.com"
+        "allow_list_bucket" = "<true, if you want to allow clients to list objects, otherwise false>"
+        "bucket_name" = "<a bucket name, $host or $path (see above)>"
+        "allowed_buckets" = "<a comma-separated list of buckets to which the client is allowed access when using $host or $path as bucket_name>"
+        "endpoint" = "<your B2 Bucket's S3 endpoint>"
     [local_server.dictionaries.bucket_auth]
+      # Credentials are stored separately
       file = "bucket_auth.json"
       format = "json"
 
-# Deploy on Fastly wants domains and ports
+# Deploy on Fastly wants endpoint domains and ports separately
 [setup]
   [setup.backends]
     [setup.backends.b2_origin]
@@ -40,7 +41,9 @@ service_id = ""
         [setup.dictionaries.config.items.allow_list_bucket]
           description = "Set to true to allow clients to list bucket contents"
         [setup.dictionaries.config.items.bucket_name]
-          description = "Your Backblaze B2 Bucket's name"
+          description = "Your Backblaze B2 Bucket's name; $host to use the initial subdomain of the incoming hostname; $path to use the initial segment of the incoming path"
+        [setup.dictionaries.config.items.allowed_buckets]
+          description = "A comma-separated list of buckets to which the client is allowed access when using $host or $path as the bucket name"
         [setup.dictionaries.config.items.endpoint]
           description = "Your Backblaze B2 Bucket's endpoint"
     [setup.dictionaries.bucket_auth]

@@ -3,6 +3,7 @@
 
 mod awsv4;
 
+use std::str::Split;
 use chrono::Utc;
 use crate::awsv4::hash;
 use fastly::handle::dictionary::DictionaryHandle;
@@ -25,6 +26,7 @@ const MAX_LEN_BUCKET_NAME: usize = 63;
 const MAX_LEN_DOMAINNAME: usize = 253;
 const MAX_LEN_APPLICATION_KEY_ID: usize = 25;
 const MAX_LEN_APPLICATION_KEY: usize = 31;
+const MAX_BUCKETS: usize = 100;
 
 /// The entry point for the application.
 ///
@@ -50,7 +52,6 @@ fn main(mut req: Request) -> Result<Response, Error> {
         _ => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
     };
 
-    // TODO - magic numbers
     let allow_list_bucket = match config.get("allow_list_bucket", MAX_LEN_BOOLEAN) {
         Ok(Some(allow_list_bucket)) => allow_list_bucket.parse::<bool>().unwrap(),
         _ => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
@@ -60,6 +61,12 @@ fn main(mut req: Request) -> Result<Response, Error> {
         Ok(Some(bucket_name)) => bucket_name,
         _ => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
     };
+
+    let bucket_list  = match config.get("allowed_buckets", MAX_LEN_BUCKET_NAME * MAX_BUCKETS) {
+        Ok(Some(bucket_list)) => bucket_list,
+        _ => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
+    };
+    let allowed_buckets: Vec<&str> = bucket_list.split(',').map(|bucket_name| bucket_name.trim()).collect();
 
     let endpoint = match config.get("endpoint", MAX_LEN_DOMAINNAME) {
         Ok(Some(endpoint)) => endpoint,
@@ -74,27 +81,34 @@ fn main(mut req: Request) -> Result<Response, Error> {
         }
     }
 
-    // Normalize outgoing request path to /bucket-name/rest/of/path
-    let (be_bucket_name, be_path) = match config_bucket_name.as_str() {
+    // Check access is allowed and normalize outgoing request path to /bucket-name/rest/of/path
+    let (bucket_allowed, be_path) = match config_bucket_name.as_str() {
         // Bucket name is the first segment of the incoming path
-        "$path" => (
-            path_segments[0].to_string(),
-            format!("/{}", path)
-        ),
+        "$path" => {
+            let bucket_name = path_segments[0];
+            (
+                allowed_buckets.contains(&bucket_name),
+                format!("/{}", path)
+            )
+        },
         // Bucket name is incoming host prefix
         "$host" => {
             let bucket_name = req.get_url().host_str().unwrap().split('.').collect::<Vec<&str>>()[0];
             (
-                bucket_name.to_string(),
+                allowed_buckets.contains(&bucket_name),
                 format!("/{}/{}", bucket_name, path)
             )
         },
         // Bucket name is set in configuration
         _ => (
-            config_bucket_name.clone(),
+            true,
             format!("/{}/{}", config_bucket_name, path)
         ),
     };
+
+    if !bucket_allowed {
+        return Ok(Response::from_status(StatusCode::NOT_FOUND));
+    }
 
     // Override incoming host header
     req.set_header(header::HOST, &endpoint);
@@ -104,13 +118,8 @@ fn main(mut req: Request) -> Result<Response, Error> {
 
     be_req.set_path(be_path.as_str());
 
-    println!("{}\n{}\n{}", be_req.get_url(), be_bucket_name, endpoint);
-
     // Set the AWS V4 authentication headers
     sign_request(&mut be_req, endpoint);
-
-    println!("Authorization: {}", be_req.get_header("Authorization").unwrap().to_str().unwrap());
-    println!("Host: {}", be_req.get_header("Host").unwrap().to_str().unwrap());
 
     // Send the request to the backend
     let be_resp = be_req.send(B2_BACKEND)?;
