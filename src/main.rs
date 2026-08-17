@@ -43,7 +43,10 @@ fn main(mut req: Request) -> Result<Response, Error> {
     };
 
     let allow_list_bucket = match config.try_get("allow_list_bucket") {
-        Ok(Some(allow_list_bucket)) => allow_list_bucket.parse::<bool>().unwrap(),
+        Ok(Some(allow_list_bucket)) => match allow_list_bucket.parse::<bool>() {
+            Ok(allow_list_bucket) => allow_list_bucket,
+            Err(_) => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
+        },
         _ => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
     };
 
@@ -81,12 +84,14 @@ fn main(mut req: Request) -> Result<Response, Error> {
         "$path" => (path_segments[0], format!("/{}", path)),
         // Bucket name is incoming host prefix
         "$host" => {
-            let bucket_name = req
-                .get_url()
-                .host_str()
-                .unwrap()
-                .split('.')
-                .collect::<Vec<&str>>()[0];
+            let host = match req.get_url().host_str() {
+                Some(host) => host,
+                None => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
+            };
+            let bucket_name = match host.split('.').next() {
+                Some(bucket_name) => bucket_name,
+                None => return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR)),
+            };
             (bucket_name, format!("/{}/{}", bucket_name, path))
         }
         // Bucket name is set in configuration
@@ -109,7 +114,9 @@ fn main(mut req: Request) -> Result<Response, Error> {
     be_req.set_path(be_path.as_str());
 
     // Set the AWS V4 authentication headers
-    sign_request(&mut be_req, endpoint);
+    if sign_request(&mut be_req, endpoint).is_err() {
+        return Ok(Response::from_status(StatusCode::INTERNAL_SERVER_ERROR));
+    }
 
     // Send the request to the backend
     let be_resp = be_req.send(B2_BACKEND)?;
@@ -119,32 +126,32 @@ fn main(mut req: Request) -> Result<Response, Error> {
 }
 
 /// Sets authentication headers for a given request.
-fn sign_request(req: &mut Request, host: String) {
+fn sign_request(req: &mut Request, host: String) -> Result<(), ()> {
     // Ensure that request is a GET or HEAD to prevent signing write operations
     if ![Method::GET, Method::HEAD].contains(&req.get_method()) {
-        return;
+        return Ok(());
     }
 
     let auth = match ConfigStore::try_open("bucket_auth") {
         Ok(h) => h,
-        _ => return,
+        _ => return Ok(()),
     };
 
     let access_key_id = match auth.try_get("b2_application_key_id") {
         Ok(Some(id)) => id,
-        _ => return,
+        _ => return Ok(()),
     };
     let secret_access_token = match auth.try_get("b2_application_key") {
         Ok(Some(key)) => key,
-        _ => return,
+        _ => return Ok(()),
     };
 
     // Extract region from the endpoint
     let bucket_region = REGION_REGEX
         .captures(host.as_str())
-        .unwrap()
+        .ok_or(())?
         .get(1)
-        .unwrap()
+        .ok_or(())?
         .as_str()
         .to_string();
 
@@ -162,4 +169,6 @@ fn sign_request(req: &mut Request, host: String) {
     req.set_header(header::AUTHORIZATION, sig);
     req.set_header("x-amz-content-sha256", hash("".to_string()));
     req.set_header("x-amz-date", now.format("%Y%m%dT%H%M%SZ").to_string());
+
+    Ok(())
 }
