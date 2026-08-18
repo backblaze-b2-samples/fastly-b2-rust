@@ -7,7 +7,7 @@ edition = "2021"
 debug = 1
 
 [dependencies]
-fastly = "^0.9.1"
+fastly = "^0.13.0"
 regex = "1.4.2"
 cfg-if = "1.0.0"
 lazy_static = "1.4.0"
